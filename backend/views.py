@@ -2,20 +2,26 @@ import logging
 
 from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .filters import ArtistFilter, EventFilter, VenueFilter
 from .models import Artist, Event, Venue
 from .serializers import (
     ArtistSerializer,
     EventSerializer,
     VenueSerializer,
 )
-
-# Create your views here.
 
 logger = logging.getLogger(__name__)
 
@@ -24,14 +30,59 @@ E401 = OpenApiResponse(description="Токен відсутній або нев�
 E403 = OpenApiResponse(description="Потрібні права адміністратора")
 E409 = OpenApiResponse(description="Є пов'язані дані, видалити неможливо")
 
+EVENT_FILTER_PARAMETERS = [
+    OpenApiParameter("title", OpenApiTypes.STR, description="Пошук за назвою події"),
+    OpenApiParameter("price", OpenApiTypes.NUMBER, description="Точна ціна квитка"),
+    OpenApiParameter("min_price", OpenApiTypes.NUMBER, description="Мінімальна ціна"),
+    OpenApiParameter("max_price", OpenApiTypes.NUMBER, description="Максимальна ціна"),
+    OpenApiParameter(
+        "date_from",
+        OpenApiTypes.DATETIME,
+        description="Події починаючи з дати/часу",
+    ),
+    OpenApiParameter(
+        "date_to",
+        OpenApiTypes.DATETIME,
+        description="Події до дати/часу",
+    ),
+    OpenApiParameter("category", OpenApiTypes.INT, description="ID категорії"),
+    OpenApiParameter("category_name", OpenApiTypes.STR, description="Назва категорії"),
+    OpenApiParameter("artist", OpenApiTypes.INT, description="ID артиста"),
+    OpenApiParameter("artist_name", OpenApiTypes.STR, description="Ім'я артиста"),
+    OpenApiParameter("venue", OpenApiTypes.INT, description="ID майданчика"),
+    OpenApiParameter("venue_name", OpenApiTypes.STR, description="Назва майданчика"),
+    OpenApiParameter("city", OpenApiTypes.STR, description="Місто майданчика"),
+]
+
+ARTIST_FILTER_PARAMETERS = [
+    OpenApiParameter("name", OpenApiTypes.STR, description="Ім'я/назва артиста"),
+    OpenApiParameter(
+        "description", OpenApiTypes.STR, description="Пошук в описі артиста"
+    ),
+]
+
+VENUE_FILTER_PARAMETERS = [
+    OpenApiParameter("name", OpenApiTypes.STR, description="Назва майданчика"),
+    OpenApiParameter("city", OpenApiTypes.STR, description="Місто майданчика"),
+    OpenApiParameter("address", OpenApiTypes.STR, description="Адреса майданчика"),
+]
+
+
+def _apply_filterset(request, queryset, filterset_class):
+    filterset = filterset_class(request.query_params, queryset=queryset)
+    if not filterset.is_valid():
+        raise ValidationError(filterset.errors)
+    return filterset.qs
+
 
 @extend_schema_view(
     get=extend_schema(
         tags=["events"],
         summary="Список подій",
-        description="Публічний ендпоінт, автентифікація не потрібна",
+        description="Публічний ендпоінт з підтримкою фільтрації. Автентифікація не потрібна",
         auth=[],
-        responses={200: EventSerializer(many=True)},
+        parameters=EVENT_FILTER_PARAMETERS,
+        responses={200: EventSerializer(many=True), 400: E400},
     ),
     post=extend_schema(
         tags=["events"],
@@ -48,8 +99,9 @@ class EventList(APIView):
         return [AllowAny()]
 
     def get(self, request):
-        logger.debug("Запит списку подій")
-        events = Event.objects.all()
+        logger.debug(f"Запит списку подій з параметрами: {request.query_params.dict()}")
+        base_qs = Event.objects.select_related("category", "artist", "venue").all()
+        events = _apply_filterset(request, base_qs, EventFilter)
         serializer = EventSerializer(events, many=True)
         return Response(serializer.data)
 
@@ -134,6 +186,12 @@ class EventDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        parameters=ARTIST_FILTER_PARAMETERS,
+        responses={200: ArtistSerializer(many=True), 400: E400},
+    )
+)
 class ArtistList(APIView):
     def get_permissions(self):
         if self.request.method == "POST":
@@ -141,8 +199,10 @@ class ArtistList(APIView):
         return [AllowAny()]
 
     def get(self, request):
-        logger.debug("Запит списку артистів")
-        artists = Artist.objects.all()
+        logger.debug(
+            f"Запит списку артистів з параметрами: {request.query_params.dict()}"
+        )
+        artists = _apply_filterset(request, Artist.objects.all(), ArtistFilter)
         serializer = ArtistSerializer(artists, many=True)
         return Response(serializer.data)
 
@@ -192,6 +252,12 @@ class ArtistDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        parameters=VENUE_FILTER_PARAMETERS,
+        responses={200: VenueSerializer(many=True), 400: E400},
+    )
+)
 class VenueList(APIView):
     def get_permissions(self):
         if self.request.method == "POST":
@@ -199,8 +265,10 @@ class VenueList(APIView):
         return [AllowAny()]
 
     def get(self, request):
-        logger.debug("Запит списку майданчиків")
-        venues = Venue.objects.all()
+        logger.debug(
+            f"Запит списку майданчиків з параметрами: {request.query_params.dict()}"
+        )
+        venues = _apply_filterset(request, Venue.objects.all(), VenueFilter)
         serializer = VenueSerializer(venues, many=True)
         return Response(serializer.data)
 
