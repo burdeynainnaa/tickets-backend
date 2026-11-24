@@ -31,4 +31,5 @@ urlpatterns = [
     path("api/docs/", SpectacularSwaggerView.as_view(), name="swagger"),
     path("api/redoc/", SpectacularRedocView.as_view(), name="redoc"),
     path("api/", include("cart.urls")),
+    path("api/", include("orders.urls")),
 ]
