@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "django_filters",
     "cart",
+    "orders",
 ]
 
 MIDDLEWARE = [
@@ -67,12 +68,6 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 ROOT_URLCONF = "config.urls"
-
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
-}
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
@@ -172,6 +167,7 @@ LOGGING = {
     "loggers": {
         "users": {"handlers": ["console"], "level": "DEBUG"},
         "backend": {"handlers": ["console"], "level": "DEBUG"},
+        "orders": {"handlers": ["console"], "level": "INFO"},
     },
 }
 
