@@ -37,13 +37,13 @@ EVENT_FILTER_PARAMETERS = [
     OpenApiParameter("max_price", OpenApiTypes.NUMBER, description="Максимальна ціна"),
     OpenApiParameter(
         "date_from",
-        OpenApiTypes.DATETIME,
-        description="Події починаючи з дати/часу",
+        OpenApiTypes.STR,
+        description="Події починаючи з дати або дати/часу (наприклад, 2026-11-20 або 2026-11-20 19:00:00)",
     ),
     OpenApiParameter(
         "date_to",
-        OpenApiTypes.DATETIME,
-        description="Події до дати/часу",
+        OpenApiTypes.STR,
+        description="Події до дати або дати/часу (наприклад, 2026-11-20 або 2026-11-20 23:59:59)",
     ),
     OpenApiParameter("category", OpenApiTypes.INT, description="ID категорії"),
     OpenApiParameter("category_name", OpenApiTypes.STR, description="Назва категорії"),
