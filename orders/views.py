@@ -92,13 +92,14 @@ class OrderList(APIView):
             OrderItem.objects.bulk_create(order_items)
 
             tickets = [
-                Ticket(order = order,
-                       event = item.event,
-                       user = request.user,
-                       qr_token = uuid.uuid4().hex,
-                       )
-                       for item in cart_items
-                       for i in range(item.amount)
+                Ticket(
+                    order=order,
+                    event=item.event,
+                    user=request.user,
+                    qr_token=uuid.uuid4().hex,
+                )
+                for item in cart_items
+                for i in range(item.amount)
             ]
             Ticket.objects.bulk_create(tickets)
 

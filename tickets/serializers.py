@@ -4,9 +4,10 @@ from backend.serializers import EventForSerializer
 
 from .models import Ticket
 
+
 class TicketSerializer(serializers.ModelSerializer):
     event = EventForSerializer(read_only=True)
-    
+
     class Meta:
         model = Ticket
         fields = [
