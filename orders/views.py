@@ -1,4 +1,5 @@
 import logging
+import uuid
 from decimal import Decimal
 
 from django.db import transaction
@@ -10,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from cart.models import Cart
+from tickets.models import Ticket
 
 from .models import Order, OrderItem
 from .serializers import OrderSerializer
@@ -88,14 +90,27 @@ class OrderList(APIView):
                 for item in cart_items
             ]
             OrderItem.objects.bulk_create(order_items)
+
+            tickets = [
+                Ticket(order = order,
+                       event = item.event,
+                       user = request.user,
+                       qr_token = uuid.uuid4().hex,
+                       )
+                       for item in cart_items
+                       for i in range(item.amount)
+            ]
+            Ticket.objects.bulk_create(tickets)
+
             Cart.objects.filter(user=request.user).delete()
 
         order = Order.objects.prefetch_related("items__event").get(id=order.id)
         logger.info(
-            "Користувач id=%s оформив замовлення id=%s (сума=%s, позицій=%s)",
+            "Користувач id=%s оформив замовлення id=%s (сума=%s, позицій=%s, квитків=%s)",
             request.user.id,
             order.id,
             order.total_price,
             len(order_items),
+            len(tickets),
         )
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
