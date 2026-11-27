@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django_filters",
     "cart",
     "orders",
+    "tickets",
 ]
 
 MIDDLEWARE = [
@@ -168,6 +169,8 @@ LOGGING = {
         "users": {"handlers": ["console"], "level": "DEBUG"},
         "backend": {"handlers": ["console"], "level": "DEBUG"},
         "orders": {"handlers": ["console"], "level": "INFO"},
+        "cart": {"handlers": ["console"], "level": "DEBUG"},
+        "tickets": {"handlers": ["console"], "level": "DEBUG"},
     },
 }
 
