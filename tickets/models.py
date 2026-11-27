@@ -11,7 +11,7 @@ from orders.models import Order
 
 class Ticket(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="tickets")
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="tickets")
+    event = models.ForeignKey(Event, on_delete=models.PROTECT, related_name="tickets")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tickets")
     qr_token = models.CharField(max_length=128, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
